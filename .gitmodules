@@ -1,0 +1,3 @@
+[submodule "dtGenerateRandomRegexMatch/Fare"]
+	path = dtGenerateRandomRegexMatch/Fare
+	url = https://github.com/moodmosaic/Fare.git

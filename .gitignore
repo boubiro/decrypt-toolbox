@@ -2,5 +2,15 @@
 bin
 obj
 
-# mstest test results
-TestResults
+# Visual Studio solution files cache.
+*.suo
+*.user
+
+# ReSharper
+_ReSharper.*/
+*.ReSharper.user
+
+# NCrunch
+*.ncrunchsolution
+*.ncrunchproject
+_NCrunch_*
