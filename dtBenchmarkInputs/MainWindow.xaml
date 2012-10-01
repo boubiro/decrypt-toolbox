@@ -1,0 +1,10 @@
+﻿<Window x:Class="dtBenchmark.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="dtBenchmarkInputs" Height="73" Width="203">
+    <StackPanel>
+        <StackPanel Orientation="Horizontal">
+            <TextBox Name="Outputs" Text="N/A" />
+        </StackPanel>
+    </StackPanel>
+</Window>

@@ -87,6 +87,18 @@ Example for 2 lines input 'Foo' and 'Bar':
 Output only inputs from stdin which hashed value matches a given hashed parameter.
 
 
+### dtBenchmarkOutputs
+
+Estimate how many rows per second a program can output.
+
+
+### dtBenchmarkInputs
+
+Estimate how many rows per second a program can process from the inputs.
+
+Example: dtBenchmarkInputs | dtBenchmarkOutputs
+
+
 Other Common Tools
 ------------------
 
