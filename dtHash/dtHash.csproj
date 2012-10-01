@@ -8,8 +8,8 @@
     <ProjectGuid>{3078FFF8-4ECB-4976-A837-7C9875F02BD0}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>dtCompareHash</RootNamespace>
-    <AssemblyName>dtCompareHash</AssemblyName>
+    <RootNamespace>dtHash</RootNamespace>
+    <AssemblyName>dtHash</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>

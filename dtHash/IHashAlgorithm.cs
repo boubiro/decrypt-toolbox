@@ -1,4 +1,6 @@
-namespace dtCompareHash
+using System.Security.Cryptography;
+
+namespace dtHash
 {
     interface IHashAlgorithm
     {
@@ -6,6 +8,6 @@ namespace dtCompareHash
 
         int HashedValuesLength { get; }
 
-        string Hash(string input);
+        HashAlgorithm CreateHashAlgorithm();
     }
 }

@@ -29,7 +29,7 @@ All those tools are mostly to check against some brute force attack.
 
 General form:
 
-    dtGenerate... | dtTransform... | dtTranform... | dtCompare...
+    dtGenerate... | dtTransform... | dtTranform... | dtHash | grep 5f4dcc3b5aa765d61d8327deb882cf99
 
   - Generator: dtGenerate* - should be [string generation](http://en.wikipedia.org/wiki/String_generation) tools (taking no stdin usually).
   - Transformation: dtTransform* - should be middle tools that take from stdin and usually generate more stdout.
@@ -41,11 +41,11 @@ Line order is usually not important so some tools may change it. Most tools also
 Usage Example
 -------------
 
-    <dictionary.txt dtTransformCombine | dtTransformCombine | dtTransformAlternatives | dtCompareHash md5 5f4dcc3b5aa765d61d8327deb882cf99
+    <dictionary.txt dtTransformCombine | dtTransformCombine | dtTransformAlternatives | dtHash md5 | grep 5f4dcc3b5aa765d61d8327deb882cf99
 
 Supposing dictionary.txt contains only words in lower case, *dtTransformCombine* will first try each word and then combination or word and *dtTransformAlternatives* will not only ouput all possible cases but also some numeric alternatives which people took as being much more secure (so you can test how much more secure it is).
 
-    dtGenerateRandomRegexMatch [a-z]{5-20} | dtTransformAlternatives | dtCompareHash md5 5f4dcc3b5aa765d61d8327deb882cf99
+    dtGenerateRandomRegexMatch [a-z]{5-20} | dtTransformAlternatives | dtHash md5 | grep 5f4dcc3b5aa765d61d8327deb882cf99
 
 Supposing the dictionary failed, this second version will generate random alphabetic characters and then again their possible numeric counterparties. It's very close to a brute force with random inputs, so may not be the best example here.
 
@@ -82,9 +82,9 @@ Example for 2 lines input 'Foo' and 'Bar':
   - BarFoo
 
 
-### dtCompareHash
+### dtHash
 
-Output only inputs from stdin which hashed value matches a given hashed parameter.
+Hash the inputs. Supports MD5 and SHA1 among others.
 
 
 ### dtBenchmarkOutputs
