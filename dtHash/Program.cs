@@ -87,51 +87,7 @@ namespace dtHash
                 var tasks = new List<Task>();
                 for (int workingThread = 0; workingThread < Environment.ProcessorCount; workingThread++)
                 {
-                    tasks.Add(Task.Factory.StartNew(
-                        () =>
-                            {
-                                var hashAlgo = algo.CreateHashAlgorithm();
-
-                                var taskOutputs = new StringBuilder();
-                                int count = 0;
-
-                                while (!producerConsumerCollection.IsCompleted)
-                                {
-                                    string line;
-                                    try
-                                    {
-                                        line = producerConsumerCollection.Take();
-                                    }
-                                    catch (InvalidOperationException)
-                                    {
-                                        if (producerConsumerCollection.IsCompleted)
-                                            break;
-                                        throw;
-                                    }
-
-                                    // Hash that line.
-                                    byte[] inputBytes = Encoding.ASCII.GetBytes(line);
-                                    byte[] hash = hashAlgo.ComputeHash(inputBytes);
-
-                                    // Convert to hexadecimal.
-                                    foreach (byte b in hash)
-                                    {
-                                        taskOutputs.Append(HexStringTable[b]);
-                                    }
-                                    taskOutputs.AppendLine();
-
-                                    // Output the hashed values in a batch.
-                                    if (++count > 10000)
-                                    {
-                                        Console.Write(taskOutputs.ToString());
-                                        taskOutputs.Clear();
-                                        count = 0;
-                                    }
-                                }
-
-                                // Output the last hashed values.
-                                Console.Write(taskOutputs.ToString());
-                            }));
+                    tasks.Add(Task.Factory.StartNew(() => HashThread(algo, producerConsumerCollection)));
                 }
 
                 // Producer.
@@ -152,6 +108,52 @@ namespace dtHash
                     task.Wait();
                 }
             }
+        }
+
+        private static void HashThread(IHashAlgorithm algo, BlockingCollection<string> producerConsumerCollection)
+        {
+            var hashAlgo = algo.CreateHashAlgorithm();
+
+            var taskOutputs = new StringBuilder();
+            int count = 0;
+
+            while (!producerConsumerCollection.IsCompleted)
+            {
+                string line;
+                try
+                {
+                    line = producerConsumerCollection.Take();
+                }
+                catch (InvalidOperationException)
+                {
+                    if (producerConsumerCollection.IsCompleted)
+                        break;
+                    throw;
+                }
+
+                // Hash that line.
+                byte[] inputBytes = Encoding.ASCII.GetBytes(line);
+                byte[] hash = hashAlgo.ComputeHash(inputBytes);
+
+                // Convert to hexadecimal.
+                foreach (byte b in hash)
+                {
+                    taskOutputs.Append(HexStringTable[b]);
+                }
+                taskOutputs.Append(' ');
+                taskOutputs.AppendLine(line);
+
+                // Output the hashed values in a batch.
+                if (++count > 10000)
+                {
+                    Console.Write(taskOutputs.ToString());
+                    taskOutputs.Clear();
+                    count = 0;
+                }
+            }
+
+            // Output the last hashed values.
+            Console.Write(taskOutputs.ToString());
         }
     }
 }

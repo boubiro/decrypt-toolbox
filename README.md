@@ -29,11 +29,11 @@ All those tools are mostly to check against some brute force attack.
 
 General form:
 
-    dtGenerate... | dtTransform... | dtTranform... | dtHash | grep 5f4dcc3b5aa765d61d8327deb882cf99
+    dtGenerate... | dtTransform... | dtTranform... | dtHash | grep 5F4DCC3B5AA765D61D8327DEB882CF99
 
   - Generator: dtGenerate* - should be [string generation](http://en.wikipedia.org/wiki/String_generation) tools (taking no stdin usually).
   - Transformation: dtTransform* - should be middle tools that take from stdin and usually generate more stdout.
-  - Comparison: dtCompare* - should be decryption tools taking as input the dictionary (outputing nearly nothing).
+  - Hash: dtHash - hashes the inputs and outputs their hashed values.
 
 Line order is usually not important so some tools may change it. Most tools also take advantage of multithreaded environments.
 
@@ -41,13 +41,9 @@ Line order is usually not important so some tools may change it. Most tools also
 Usage Example
 -------------
 
-    <dictionary.txt dtTransformCombine | dtTransformCombine | dtTransformAlternatives | dtHash md5 | grep 5f4dcc3b5aa765d61d8327deb882cf99
+    <dictionary.txt dtTransformCombine | dtTransformCombine | dtTransformAlternatives | dtHash md5 | grep 5F4DCC3B5AA765D61D8327DEB882CF99
 
-Supposing dictionary.txt contains only words in lower case, *dtTransformCombine* will first try each word and then combination or word and *dtTransformAlternatives* will not only ouput all possible cases but also some numeric alternatives which people took as being much more secure (so you can test how much more secure it is).
-
-    dtGenerateRandomRegexMatch [a-z]{5-20} | dtTransformAlternatives | dtHash md5 | grep 5f4dcc3b5aa765d61d8327deb882cf99
-
-Supposing the dictionary failed, this second version will generate random alphabetic characters and then again their possible numeric counterparties. It's very close to a brute force with random inputs, so may not be the best example here.
+Supposing `dictionary.txt` contains only words in lower case, *dtTransformCombine* will first try each word and then combination or word, and then *dtTransformAlternatives* will not only ouput all possible cases but also some numeric alternatives which people took as being much more secure (so you can test how much more secure it is). Finally *dtHash* will hash that string and *grep* (or whatever tool you have) will compare it against some hashed value.
 
 
 Tools in this Suite
@@ -56,16 +52,26 @@ Tools in this Suite
 ### dtGenerateRandomRegexMatch
 
 *Reverse regular expression*, a port of [Xeger](http://code.google.com/p/xeger/) done in the [Fare](https://github.com/Vassiliki/Fare) project.
-It generates random strings matching the given regular expression.
+It generates random strings matching the given regular expression. Useful for some testing but not very useful in practice.
+
+Example: `dtGenerateRandomRegexMatch [a-z]{5,12} | ...`
 
 
 ### dtTransformAlternatives
 
 A tool that outputs all possible variations of each character for each input.
 
-Example for a single character 'é': é, É, e, E, 3.
+Example for `echo AE | dtTransformAlternatives`:
 
-Example for two characters 'AE': ae, aE, a3, Ae, AE, A3, 4e, 4E, 43.
+    ae
+    aE
+    a3
+    Ae
+    AE
+    A3
+    4e
+    4E
+    43
 
 
 ### dtTransformCombine
@@ -74,29 +80,33 @@ A tool that combines all possible sets of all input words.
 
 Does *not* work if the inputs are unlimited like with `dtGenerateRandomRegexMatch` or such. 
 
-Example for 2 lines input 'Foo' and 'Bar':
+Example for 2 input lines 'Foo' and 'Bar':
 
-  - Foo
-  - Bar
-  - FooBar
-  - BarFoo
+    Foo
+    Bar
+    FooBar
+    BarFoo
 
 
 ### dtHash
 
-Hash the inputs. Supports MD5 and SHA1 among others.
+Hash the inputs. Supports MD5 and SHA1 among others. This is probably the slowest pipe (obviously).
+
+Example: `echo password | dtHash MD5`
 
 
 ### dtBenchmarkOutputs
 
 Estimate how many rows per second a program can output.
 
+Example: `... | dtBenchmarkOutputs`
+
 
 ### dtBenchmarkInputs
 
 Estimate how many rows per second a program can process from the inputs.
 
-Example: dtBenchmarkInputs | dtBenchmarkOutputs
+Example: `dtBenchmarkInputs | ...`
 
 
 Other Common Tools
@@ -104,7 +114,9 @@ Other Common Tools
 
 Cygwin, MSysGit and others commonly have those useful transformation tools:
 
-  - `... | sed 's/^/FOO/' | ...` - can be used to add salt.
+  - `... | sed 's/^/FOO/' | ...` - Linux (Cygwin and Msysgit) tool that can be used to add salt.
+  - `... | grep -F '5F4DCC3B5AA765D61D8327DEB882CF99'` - Linux (Cygwin and Msysgit) string matching.
+  - `... | find "5F4DCC3B5AA765D61D8327DEB882CF99"` - MSDOS string matching.
 
 
 Development
