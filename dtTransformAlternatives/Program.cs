@@ -6,6 +6,10 @@ namespace dtTransformAlternatives
 {
     class Program
     {
+        private const int FlushLineCount = 1000;
+        private static readonly StringBuilder StringBuilder = new StringBuilder();
+        private static int _lineCount = 0;
+
         static int Main(string[] args)
         {
             try
@@ -14,106 +18,140 @@ namespace dtTransformAlternatives
                 {
                     string line = Console.ReadLine();
                     if (line == null)
-                        return 0;
+                        break;
 
                     // Now print all possible combinations.
                     if (line == "")
-                        Console.WriteLine("");
+                    {
+                        StringBuilder.AppendLine();
+                        ++_lineCount;
+                    }
                     else
                     {
-                        var sb = new StringBuilder();
-                        Generate("", line, 0, sb);
-                        Console.Write(sb.ToString());
+                        Generate("", line, 0);
+                    }
+
+                    if (_lineCount > FlushLineCount)
+                    {
+                        FlushBuffer();
                     }
                 }
+
+                FlushBuffer();
             }
             catch (Exception e)
             {
                 Console.Error.WriteLine(e);
                 return 1;
             }
+
+            return 0;
         }
 
-        private static void Generate(string start, string line, int i, StringBuilder stringBuilder)
+        private static void Generate(string start, string line, int i)
         {
             int next = i + 1;
             if (next < line.Length)
+            {
                 foreach (char ch in SimpleAccentAlternatives(line[i]))
                 {
-                    Generate(start + ch, line, next, stringBuilder);
+                    Generate(start + ch, line, next);
                 }
+
+                if (_lineCount > FlushLineCount)
+                {
+                    FlushBuffer();
+                }
+            }
             else
+            {
                 foreach (char ch in SimpleAccentAlternatives(line[i]))
                 {
-                    stringBuilder.AppendLine(start + ch);
+                    StringBuilder.AppendLine(start + ch);
+                    ++_lineCount;
                 }
+            }
+        }
+
+        private static void FlushBuffer()
+        {
+            Console.Write(StringBuilder.ToString());
+            StringBuilder.Clear();
+            _lineCount = 0;
         }
 
         static IEnumerable<char> SimpleAccentAlternatives(char ch)
         {
-            foreach (char c in Alternatives(ch))
+            if (!char.IsLetter(ch))
+            {
+                yield return ch;
+                yield break;
+            }
+
+            char upperCaseLetter = char.IsUpper(ch) ? ch : char.ToUpper(ch);
+
+            foreach (char c in AlternativesLetterToDigits(upperCaseLetter))
                 yield return c;
 
-            switch (char.ToLower(ch))
+            switch (upperCaseLetter)
             {
-                case 'á':
-                case 'à':
-                case 'â':
-                case 'ä':
-                    foreach (char c in Alternatives('a'))
+                case 'Á':
+                case 'À':
+                case 'Â':
+                case 'Ä':
+                    foreach (char c in AlternativesLetterToDigits('A'))
                         yield return c;
                     break;
-                case 'é':
-                case 'è':
-                case 'ê':
-                case 'ë':
-                    foreach (char c in Alternatives('e'))
+                case 'É':
+                case 'È':
+                case 'Ê':
+                case 'Ë':
+                    foreach (char c in AlternativesLetterToDigits('E'))
                         yield return c;
                     break;
-                case 'í':
-                case 'ì':
-                case 'î':
-                case 'ï':
-                    foreach (char c in Alternatives('e'))
+                case 'Í':
+                case 'Ì':
+                case 'Î':
+                case 'Ï':
+                    foreach (char c in AlternativesLetterToDigits('E'))
                         yield return c;
                     break;
-                case 'ó':
-                case 'ò':
-                case 'ô':
-                case 'ö':
-                    foreach (char c in Alternatives('o'))
+                case 'Ó':
+                case 'Ò':
+                case 'Ô':
+                case 'Ö':
+                    foreach (char c in AlternativesLetterToDigits('O'))
                         yield return c;
                     break;
-                case 'ú':
-                case 'ù':
-                case 'û':
-                case 'ü':
-                case 'µ':
-                    foreach (char c in Alternatives('u'))
+                case 'Ú':
+                case 'Ù':
+                case 'Û':
+                case 'Ü':
+                case 'Μ':
+                    foreach (char c in AlternativesLetterToDigits('U'))
                         yield return c;
                     break;
                 case 'ß':
-                    foreach (char c in Alternatives('s'))
+                    foreach (char c in AlternativesLetterToDigits('S'))
                         yield return c;
                     break;
-                case 'ç':
-                    foreach (char c in Alternatives('c'))
+                case 'Ç':
+                    foreach (char c in AlternativesLetterToDigits('C'))
                         yield return c;
                     break;
-                case 'ñ':
-                    foreach (char c in Alternatives('n'))
+                case 'Ñ':
+                    foreach (char c in AlternativesLetterToDigits('N'))
                         yield return c;
                     break;
             }
         }
 
-        static IEnumerable<char> Alternatives(char ch)
+        static IEnumerable<char> AlternativesLetterToDigits(char upperCaseLetter)
         {
-            yield return char.ToLower(ch);
-            var upper = char.ToUpper(ch);
-            yield return upper;
+            yield return char.ToLower(upperCaseLetter);
+            yield return upperCaseLetter;
 
-            switch (upper)
+            switch (upperCaseLetter)
             {
                 case 'O':
                     yield return '0';
