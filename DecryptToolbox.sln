@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dtHash", "dtHash\dtHash.csproj", "{3078FFF8-4ECB-4976-A837-7C9875F02BD0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dtGenerateRandomRegexMatch", "dtGenerateRandomRegexMatch\dtGenerateRandomRegexMatch.csproj", "{74DCB616-2265-48BE-B509-F4B88903E0BA}"

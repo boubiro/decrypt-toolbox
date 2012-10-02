@@ -81,7 +81,7 @@ namespace dtHash
         private static void Decrypt(IHashAlgorithm algo)
         {
             // IProducerConsumerCollection
-            using (var producerConsumerCollection = new BlockingCollection<string>())
+            using (var producerConsumerCollection = new BlockingCollection<string>(50000))
             {
                 // Consumer.
                 var tasks = new List<Task>();
