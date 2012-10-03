@@ -8,8 +8,22 @@ namespace dtTransformCombine
 {
     class Program
     {
+        private const int FlushLineCount = 1000;
+        private static readonly StringBuilder StringBuilder = new StringBuilder();
+        private static int _lineCount = 0;
+        private static int _maxLength;
+
         static int Main(string[] args)
         {
+            if (args.Length >= 1)
+            {
+                _maxLength = Convert.ToInt16(args[0]);
+            }
+            else
+            {
+                _maxLength = 0;
+            }
+
             try
             {
                 // Load all items.
@@ -17,6 +31,8 @@ namespace dtTransformCombine
 
                 // Generate all combination.
                 GenerateCombinations(items);
+
+                FlushBuffer();
             }
             catch (Exception e)
             {
@@ -54,10 +70,12 @@ namespace dtTransformCombine
 
         private static void GenerateItems(List<Item> items, int numberOfElements, string prepend = "")
         {
+            if (_maxLength > 0 && prepend.Length > _maxLength)
+                return;
+
             Debug.Assert(numberOfElements >= 0);
             if (numberOfElements > 0)
             {
-                //var subset = new HashSet<string>(items);
                 foreach (Item item in items.Where(x => x.Enabled = true))
                 {
                     item.Enabled = false;
@@ -67,11 +85,29 @@ namespace dtTransformCombine
             }
             else
             {
-                var sb = new StringBuilder();
                 foreach (Item item in items.Where(x => x.Enabled = true))
-                    sb.AppendLine(prepend + item.Line);
-                Console.Write(sb.ToString());
+                {
+                    string line = prepend + item.Line;
+                    if (_maxLength <= 0 || line.Length <= _maxLength)
+                    {
+                        StringBuilder.AppendLine(line);
+                        ++_lineCount;
+                    }
+                }
+
+                // Periodically flush the output.
+                if (_lineCount > FlushLineCount)
+                {
+                    FlushBuffer();
+                }
             }
+        }
+
+        private static void FlushBuffer()
+        {
+            Console.Write(StringBuilder.ToString());
+            StringBuilder.Clear();
+            _lineCount = 0;
         }
 
         class Item : ICloneable
