@@ -87,7 +87,7 @@ namespace dtTransformCombine
             {
                 foreach (Item item in items.Where(x => x.Enabled = true))
                 {
-                    string line = prepend + item.Line;
+                    string line = prepend + item;
                     if (_maxLength <= 0 || line.Length <= _maxLength)
                     {
                         StringBuilder.AppendLine(line);
@@ -133,6 +133,11 @@ namespace dtTransformCombine
             }
 
             #endregion
+
+            public override string ToString()
+            {
+                return Line;
+            }
         }
     }
 }
