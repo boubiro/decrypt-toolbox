@@ -9,10 +9,30 @@ namespace dtTransformCombine
 {
     class Program
     {
+        /// <summary>
+        /// Number of lines after which we should flush the <see cref="StringBuilder"/> to the output.
+        /// </summary>
         private const int FlushLineCount = 1000;
+
+        /// <summary>
+        /// Output buffer.
+        /// </summary>
         private static readonly StringBuilder StringBuilder = new StringBuilder();
+
+        /// <summary>
+        /// Number of lines currently in the <see cref="StringBuilder"/>.
+        /// </summary>
         private static int _lineCount;
+
+        /// <summary>
+        /// Maximum length of the combined lines to output.
+        /// </summary>
         private static int _maxLength;
+
+        /// <summary>
+        /// Length of the shortest line in the input set.
+        /// </summary>
+        private static int _shortestLineLength;
 
         static int Main(string[] args)
         {
@@ -42,7 +62,8 @@ namespace dtTransformCombine
                 // Generate all possible combinations.
                 if (items.Any())
                 {
-                    for (int i = 0; i < _maxLength/items.First().Length; ++i)
+                    _shortestLineLength = items.First().Length;
+                    for (int i = 1; i <= _maxLength/_shortestLineLength; ++i)
                         GenerateItems(items, i);
                 }
 
@@ -74,16 +95,13 @@ namespace dtTransformCombine
 
         private static void GenerateItems(List<string> items, int numberOfElements, string prepend = "")
         {
-            if (prepend.Length >= _maxLength)
-                return;
-
             Debug.Assert(numberOfElements > 0);
             if (numberOfElements > 1)
             {
                 foreach (string item in items)
                 {
                     var nextPrepend = prepend + item;
-                    if (nextPrepend.Length >= _maxLength)
+                    if (nextPrepend.Length + _shortestLineLength > _maxLength)
                         // There can be no other item less than this length.
                         break;
                     GenerateItems(items, numberOfElements - 1, nextPrepend);
