@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -10,27 +11,40 @@ namespace dtTransformCombine
     {
         private const int FlushLineCount = 1000;
         private static readonly StringBuilder StringBuilder = new StringBuilder();
-        private static int _lineCount = 0;
+        private static int _lineCount;
         private static int _maxLength;
 
         static int Main(string[] args)
         {
-            if (args.Length >= 1)
+            if (args.Length != 1)
             {
-                _maxLength = Convert.ToInt16(args[0]);
+                var exeName = Path.GetFileNameWithoutExtension(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                Console.WriteLine("Usage: {0} <max_length>", exeName);
+                Console.WriteLine();
+                Console.Error.WriteLine("You must give a maximum length.");
+                return 1;
             }
-            else
-            {
-                _maxLength = 0;
-            }
+
+            _maxLength = Convert.ToInt16(args[0]);
 
             try
             {
                 // Load all items.
                 var items = GetItems();
 
-                // Generate all combination.
-                GenerateCombinations(items);
+                // Sort them by line length,
+                // and remove empty lines.
+                items = items.Where(x => !string.IsNullOrEmpty(x)).Distinct().OrderBy(x => x.Length).ToList();
+
+                // Include the empty item.
+                Console.WriteLine();
+
+                // Generate all possible combinations.
+                if (items.Any())
+                {
+                    for (int i = 0; i < _maxLength/items.First().Length; ++i)
+                        GenerateItems(items, i);
+                }
 
                 FlushBuffer();
             }
@@ -43,56 +57,48 @@ namespace dtTransformCombine
             return 0;
         }
 
-        private static List<Item> GetItems()
+        private static List<string> GetItems()
         {
             // Keep a list of all items.
-            var items = new List<Item>();
+            var items = new List<string>();
             while (true)
             {
                 string line = Console.ReadLine();
                 if (line == null)
                     break;
 
-                items.Add(new Item(line));
+                items.Add(line);
             }
             return items;
         }
 
-        private static void GenerateCombinations(List<Item> items)
+        private static void GenerateItems(List<string> items, int numberOfElements, string prepend = "")
         {
-            // Include the empty item.
-            Console.WriteLine();
-
-            // Generate all possible combinations.
-            for (int i = 0; i < items.Count; ++i)
-                GenerateItems(items, i);
-        }
-
-        private static void GenerateItems(List<Item> items, int numberOfElements, string prepend = "")
-        {
-            if (_maxLength > 0 && prepend.Length > _maxLength)
+            if (prepend.Length >= _maxLength)
                 return;
 
-            Debug.Assert(numberOfElements >= 0);
-            if (numberOfElements > 0)
+            Debug.Assert(numberOfElements > 0);
+            if (numberOfElements > 1)
             {
-                foreach (Item item in items.Where(x => x.Enabled = true))
+                foreach (string item in items)
                 {
-                    item.Enabled = false;
-                    GenerateItems(items, numberOfElements - 1, prepend + item);
-                    item.Enabled = true;
+                    var nextPrepend = prepend + item;
+                    if (nextPrepend.Length >= _maxLength)
+                        // There can be no other item less than this length.
+                        break;
+                    GenerateItems(items, numberOfElements - 1, nextPrepend);
                 }
             }
             else
             {
-                foreach (Item item in items.Where(x => x.Enabled = true))
+                foreach (string item in items)
                 {
                     string line = prepend + item;
-                    if (_maxLength <= 0 || line.Length <= _maxLength)
-                    {
-                        StringBuilder.AppendLine(line);
-                        ++_lineCount;
-                    }
+                    if (line.Length > _maxLength)
+                        // There can be no other item less than this length.
+                        break;
+                    StringBuilder.AppendLine(line);
+                    ++_lineCount;
                 }
 
                 // Periodically flush the output.
@@ -108,36 +114,6 @@ namespace dtTransformCombine
             Console.Write(StringBuilder.ToString());
             StringBuilder.Clear();
             _lineCount = 0;
-        }
-
-        class Item : ICloneable
-        {
-            public Item(string line)
-            {
-                Enabled = true;
-                Line = line;
-            }
-
-            public bool Enabled { get; set; }
-
-            public string Line { get; private set; }
-
-            #region Implementation of ICloneable
-
-            public object Clone()
-            {
-                return new Item(Line)
-                    {
-                        Enabled = Enabled,
-                    };
-            }
-
-            #endregion
-
-            public override string ToString()
-            {
-                return Line;
-            }
         }
     }
 }
