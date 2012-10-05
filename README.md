@@ -16,9 +16,9 @@ Using various independant tools piped together to adapt to any case without dupl
 
 Example:
 
-    <dictionary.txt dtTransformCombine | dtTransformAlternatives | dtHash md5 | grep -F 5f4dcc3b5aa765d61d8327deb882cf99
+    <dictionary.txt dtTransformCombine | dtTransformAlternatives | dtHash md5 | dtFind 5f4dcc3b5aa765d61d8327deb882cf99
 
-Supposing `dictionary.txt` contains only words in lower case, *dtTransformCombine* will first try each word and then combination or word, and then *dtTransformAlternatives* will not only ouput all possible cases but also some numeric alternatives which people took as being much more secure (so you can test how much more secure it is). Finally *dtHash* will hash that string and *grep* (or whatever tool you have) will compare it against some hashed value.
+Supposing `dictionary.txt` contains only words in lower case, *dtTransformCombine* will first try each word and then combination or word, and then *dtTransformAlternatives* will not only ouput all possible cases but also some numeric alternatives which people took as being much more secure (so you can test how much more secure it is). Finally *dtHash* will hash that string and *dtFind* will compare it against some hashed value.
 
 See more details on the [decrypt-toolbox Wiki](https://github.com/wernight/decrypt-toolbox/wiki).
 
