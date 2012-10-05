@@ -71,7 +71,7 @@ namespace dtFind
                         lastOutputTime = DateTime.Now;
 
                         Console.Write("\rProcessed {0} M lines in {1}, last compared: {2}",
-                                        millionLinesProcessed/1000000,
+                                        millionLinesProcessed,
                                         (DateTime.Now - startTime).ToReadableString(),
                                         line.PadRight(lastProgressLineLength));
 
@@ -99,7 +99,7 @@ namespace dtFind
             Console.WriteLine();
             Console.WriteLine("------------------------------------------------------------");
             Console.WriteLine();
-            Console.WriteLine("Processed {0} M lines in {1}.", millionLinesProcessed / 1000000, (DateTime.Now - startTime).ToReadableString());
+            Console.WriteLine("Processed {0} M lines in {1}.", millionLinesProcessed, (DateTime.Now - startTime).ToReadableString());
             if (matches.Any())
             {
                 Console.WriteLine("Found {0} matches found starting by '{1}':", matches.Count, search);
