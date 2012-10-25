@@ -2,14 +2,12 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Engines;
-using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Paddings;
 using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Security;
 
 namespace dtDecrypt
 {
@@ -37,45 +35,41 @@ namespace dtDecrypt
 
         static int Main(string[] args)
         {
-            var algos = new List<Func<IBlockCipher>>
-                            {
-                                () => new BlowfishEngine(),
-                                () => new TwofishEngine(),
-                            };
-
             if (args.Length < 2 || args.Length > 3)
             {
                 var exeName = Path.GetFileNameWithoutExtension(System.Reflection.Assembly.GetExecutingAssembly().Location);
-                Console.WriteLine("USAGE: <KEYS_FILE.txt {0} <algo> <encrypted_file> [true for all_padding]", exeName);
+                Console.WriteLine("USAGE: <KEYS_FILE.txt {0} <encrypted_file> <algo> [true for all_padding]", exeName);
                 Console.WriteLine();
-                Console.WriteLine("Algorithms supported:");
-                foreach (var algorithm in algos)
-                {
-                    Console.WriteLine("  - {0}", algorithm().AlgorithmName);
-                }
-                Console.Error.WriteLine("Invalid number of arguments.");
+                Console.WriteLine("Symmetric key algorithms:");
+                Console.WriteLine("    AES, Blowfish, Camellia, CAST5, CAST6, DESede, DES, GOST28147, HC-128,");
+                Console.WriteLine("    HC-256, IDEA, NaccacheStern, RC2, RC4, RC5-32, RC5-64, RC6, Rijndael,");
+                Console.WriteLine("    Serpent, Skipjack, TEA/XTEA, Twofish, and VMPC");
+                Console.WriteLine();
+                Console.WriteLine("Symmetric key paddings:");
+                Console.WriteLine("    ISO10126d2, ISO7816d4, PKCS#5/7, TBC, X.923, and Zero Byte.");
+                if (args.Length > 0)
+                    Console.Error.WriteLine("Invalid number of arguments.");
                 return 1;
             }
 
-            Func<IBlockCipher> algo;
+            Func<IBufferedCipher> algo;
             string encryptedFileName;
             bool allPaddings;
             try
             {
-                // Get the algo.
-                // TODO: Use CipherUtilities.GetCipher(agloName);
-                algo = algos.FirstOrDefault(x => String.Compare(args[0], x().AlgorithmName, StringComparison.OrdinalIgnoreCase) == 0);
-                if (algo == null)
-                {
-                    Console.Error.WriteLine("Invalid algorithm name '{0}', must be one of: {1}", args[0], string.Join(", ", algos.Select(x => x().AlgorithmName)));
-                    return 1;
-                }
-
                 // Get the encrypted file.
-                encryptedFileName = args[1];
+                encryptedFileName = args[0];
                 if (!File.Exists(encryptedFileName))
                 {
                     Console.Error.WriteLine("Encrypted file not found: " + encryptedFileName);
+                }
+
+                // Get the algo.
+                algo = () => CipherUtilities.GetCipher(args[1]);
+                if (algo() == null)
+                {
+                    Console.Error.WriteLine("Invalid algorithm name '{0}'.", args[1]);
+                    return 1;
                 }
 
                 // Generate outputs for all paddings?
@@ -102,7 +96,7 @@ namespace dtDecrypt
             return 0;
         }
 
-        private static void Decrypt(Func<IBlockCipher> engine, string encryptedFileName, bool allPaddings)
+        private static void Decrypt(Func<IBufferedCipher> engine, string encryptedFileName, bool allPaddings)
         {
             // Load the encrypted file.
             var encrpted = File.ReadAllBytes(encryptedFileName);
@@ -137,7 +131,7 @@ namespace dtDecrypt
             }
         }
 
-        private static void DecryptThread(IBlockCipher cipher, byte[] input, BlockingCollection<string> producerConsumerCollection, bool allPaddings = false)
+        private static void DecryptThread(IBufferedCipher cipher, byte[] input, BlockingCollection<string> producerConsumerCollection, bool allPaddings = false)
         {
             var taskOutputs = new StringBuilder();
             int lineCount = 0;
@@ -183,10 +177,9 @@ namespace dtDecrypt
                 foreach (IBlockCipherPadding padding in paddings)
                 {
                     // Decrypt
-                    var paddedBufferedBlockCipher = new PaddedBufferedBlockCipher(cipher, padding);
-                    paddedBufferedBlockCipher.Init(true, new KeyParameter(key));
-                    byte[] output = paddedBufferedBlockCipher.DoFinal(input);
-                    paddedBufferedBlockCipher.Reset();
+                    cipher.Init(true, new KeyParameter(key));
+                    byte[] output = cipher.DoFinal(input);
+                    cipher.Reset();
 
                     // Convert to hexadecimal.
                     foreach (byte b in output)
