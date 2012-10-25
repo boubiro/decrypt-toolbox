@@ -177,9 +177,18 @@ namespace dtDecrypt
                 foreach (IBlockCipherPadding padding in paddings)
                 {
                     // Decrypt
-                    cipher.Init(false, new KeyParameter(key));
-                    byte[] output = cipher.DoFinal(input);
-                    cipher.Reset();
+                    byte[] output;
+                    try
+                    {
+                        cipher.Init(false, new KeyParameter(key));
+                        output = cipher.DoFinal(input);
+                        cipher.Reset();
+                    }
+                    catch (InvalidCipherTextException)
+                    {
+                        // TODO: Possibly filder out those inputs before and/or tell the user not to generate them.
+                        continue;
+                    }
 
                     // Convert to hexadecimal.
                     foreach (byte b in output)
@@ -192,7 +201,7 @@ namespace dtDecrypt
                 }
 
                 // Output the hashed values in a batch.
-                if (lineCount > 10000)
+                if (taskOutputs.Length > 100000)
                 {
                     Console.Write(taskOutputs.ToString());
                     taskOutputs.Clear();
