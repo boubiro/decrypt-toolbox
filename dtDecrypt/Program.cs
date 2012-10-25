@@ -177,7 +177,7 @@ namespace dtDecrypt
                 foreach (IBlockCipherPadding padding in paddings)
                 {
                     // Decrypt
-                    cipher.Init(true, new KeyParameter(key));
+                    cipher.Init(false, new KeyParameter(key));
                     byte[] output = cipher.DoFinal(input);
                     cipher.Reset();
 
