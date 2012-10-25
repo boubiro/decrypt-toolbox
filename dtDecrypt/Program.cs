@@ -7,10 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Engines;
-using Org.BouncyCastle.Crypto.IO;
 using Org.BouncyCastle.Crypto.Modes;
+using Org.BouncyCastle.Crypto.Paddings;
 using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Security;
 
 namespace dtDecrypt
 {
@@ -44,10 +43,10 @@ namespace dtDecrypt
                                 () => new TwofishEngine(),
                             };
 
-            if (args.Length != 2)
+            if (args.Length < 2 || args.Length > 3)
             {
                 var exeName = Path.GetFileNameWithoutExtension(System.Reflection.Assembly.GetExecutingAssembly().Location);
-                Console.WriteLine("USAGE: <KEYS_FILE.txt {0} <algo> <encrypted_file>", exeName);
+                Console.WriteLine("USAGE: <KEYS_FILE.txt {0} <algo> <encrypted_file> [true for all_padding]", exeName);
                 Console.WriteLine();
                 Console.WriteLine("Algorithms supported:");
                 foreach (var algorithm in algos)
@@ -58,26 +57,40 @@ namespace dtDecrypt
                 return 1;
             }
 
-            // Get the algo.
-            // TODO: Use CipherUtilities.GetCipher(agloName);
-            Func<IBlockCipher> algo = algos.FirstOrDefault(x => String.Compare(args[0], x().AlgorithmName, StringComparison.OrdinalIgnoreCase) == 0);
-            if (algo == null)
+            Func<IBlockCipher> algo;
+            string encryptedFileName;
+            bool allPaddings;
+            try
             {
-                Console.Error.WriteLine("Invalid algorithm name '{0}', must be one of: {1}", args[0], string.Join(", ", algos.Select(x => x().AlgorithmName)));
-                return 1;
-            }
+                // Get the algo.
+                // TODO: Use CipherUtilities.GetCipher(agloName);
+                algo = algos.FirstOrDefault(x => String.Compare(args[0], x().AlgorithmName, StringComparison.OrdinalIgnoreCase) == 0);
+                if (algo == null)
+                {
+                    Console.Error.WriteLine("Invalid algorithm name '{0}', must be one of: {1}", args[0], string.Join(", ", algos.Select(x => x().AlgorithmName)));
+                    return 1;
+                }
 
-            // Get the encrypted file.
-            var encryptedFileName = args[1];
-            if (!File.Exists(encryptedFileName))
+                // Get the encrypted file.
+                encryptedFileName = args[1];
+                if (!File.Exists(encryptedFileName))
+                {
+                    Console.Error.WriteLine("Encrypted file not found: " + encryptedFileName);
+                }
+
+                // Generate outputs for all paddings?
+                allPaddings = (args.Length >= 3 && Convert.ToBoolean(args[2]));
+            }
+            catch (Exception e)
             {
-                Console.Error.WriteLine("Encrypted file not found: " + encryptedFileName);
+                Console.Error.WriteLine("Failed to process command line: " + e.Message);
+                return 1;
             }
 
             // Run the program.
             try
             {
-                Decrypt(algo, encryptedFileName);
+                Decrypt(algo, encryptedFileName, allPaddings);
             }
             catch (Exception ex)
             {
@@ -89,7 +102,7 @@ namespace dtDecrypt
             return 0;
         }
 
-        private static void Decrypt(Func<IBlockCipher> engine, string encryptedFileName)
+        private static void Decrypt(Func<IBlockCipher> engine, string encryptedFileName, bool allPaddings)
         {
             // Load the encrypted file.
             var encrpted = File.ReadAllBytes(encryptedFileName);
@@ -101,7 +114,7 @@ namespace dtDecrypt
                 var tasks = new List<Task>();
                 for (int workingThread = 0; workingThread < Environment.ProcessorCount; workingThread++)
                 {
-                    tasks.Add(Task.Factory.StartNew(() => DecryptThread(engine(), encrpted, producerConsumerCollection)));
+                    tasks.Add(Task.Factory.StartNew(() => DecryptThread(engine(), encrpted, producerConsumerCollection, allPaddings)));
                 }
 
                 // Producer.
@@ -124,11 +137,30 @@ namespace dtDecrypt
             }
         }
 
-        private static void DecryptThread(IBlockCipher cipher, byte[] input, BlockingCollection<string> producerConsumerCollection)
+        private static void DecryptThread(IBlockCipher cipher, byte[] input, BlockingCollection<string> producerConsumerCollection, bool allPaddings = false)
         {
             var taskOutputs = new StringBuilder();
-            int count = 0;
-            var output = new byte[cipher.GetBlockSize()];
+            int lineCount = 0;
+
+            IBlockCipherPadding[] paddings;
+
+            if (allPaddings)
+            {
+                paddings = new IBlockCipherPadding[]
+                               {
+                                   new ZeroBytePadding(),
+                                   new ISO10126d2Padding(),
+                                   new ISO7816d4Padding(),
+                                   new Pkcs7Padding(),
+                                   new TbcPadding(),
+                                   new X923Padding(),
+                                   new X923Padding(),
+                               };
+            }
+            else
+            {
+                paddings = new IBlockCipherPadding[] {new Pkcs7Padding()};
+            }
 
             while (!producerConsumerCollection.IsCompleted)
             {
@@ -147,29 +179,31 @@ namespace dtDecrypt
                 // Use that line as the key.
                 byte[] key = Encoding.ASCII.GetBytes(line);
 
-                // Decrypt
-                cipher.Init(false, new KeyParameter(key));
-                // TODO: Currently only decrypts the first block.
-                //new CipherStream()
-                //CbcBlockCipher cbcBlockCipher = new CbcBlockCipher(cipher);
-                //IAsymmetricBlockCipher eng = new 
-                int size = cipher.ProcessBlock(input, 0, output, 0);
-                cipher.Reset();
-
-                // Convert to hexadecimal.
-                foreach (byte b in output.Take(size))
+                // For each possible padding...
+                foreach (IBlockCipherPadding padding in paddings)
                 {
-                    taskOutputs.Append(HexStringTable[b]);
+                    // Decrypt
+                    var paddedBufferedBlockCipher = new PaddedBufferedBlockCipher(cipher, padding);
+                    paddedBufferedBlockCipher.Init(true, new KeyParameter(key));
+                    byte[] output = paddedBufferedBlockCipher.DoFinal(input);
+                    paddedBufferedBlockCipher.Reset();
+
+                    // Convert to hexadecimal.
+                    foreach (byte b in output)
+                    {
+                        taskOutputs.Append(HexStringTable[b]);
+                    }
+                    taskOutputs.AppendFormat(" `{0}` [{1}]", line, padding.PaddingName);
+                    taskOutputs.AppendLine();
+                    ++lineCount;
                 }
-                taskOutputs.Append(' ');
-                taskOutputs.AppendLine(line);
 
                 // Output the hashed values in a batch.
-                if (++count > 10000)
+                if (lineCount > 10000)
                 {
                     Console.Write(taskOutputs.ToString());
                     taskOutputs.Clear();
-                    count = 0;
+                    lineCount = 0;
                 }
             }
 
