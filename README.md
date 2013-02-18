@@ -23,6 +23,12 @@ Supposing `dictionary.txt` contains only words in lower case, *dtTransformCombin
 See more details on the [decrypt-toolbox Wiki](https://github.com/wernight/decrypt-toolbox/wiki).
 
 
+Download
+--------
+
+Prebuilt Windows binaries are available from http://download.beroux.com/decrypt-toolbox.zip
+
+
 Development
 -----------
 
